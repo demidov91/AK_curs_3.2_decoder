@@ -1,0 +1,21 @@
+*.sdf
+*.sln
+*.suo
+*.xlsx
+*.exe
+*.ilb
+*.pdb
+*.txt
+*.doc
+*.docx
+ipch/*
+Debug/*
+Decoder/Debug/*
+*.vcxproj
+*.filters
+*.user
+Decoder/test/*
+external dependences/*
+*.key
+*.extn
+*.opensdf
