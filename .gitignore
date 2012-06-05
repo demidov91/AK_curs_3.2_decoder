@@ -14,8 +14,8 @@ Decoder/Debug/*
 *.vcxproj
 *.filters
 *.user
-Decoder/test/*
+Encoder/test/*
 external dependences/*
 *.key
 *.extn
-*.opensdf
+*.png

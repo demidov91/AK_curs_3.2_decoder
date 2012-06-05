@@ -1,5 +1,6 @@
 #define BLOCK_COUNT 256
 #define MAX_FILE_COUNT 256
+#define MAX_THREAD_COUNT MAX_FILE_COUNT
 #define MAX_BLOCK_SIZE 256
 #define BYTE unsigned char
 ///------------------------------------------

@@ -4,16 +4,15 @@
 #include <vector>
 #include "Decode.h"
 #include "main.h"
+#include "tests.h"
 using namespace std;
 
 
 
 int main(int argc, char** argv)
 {
-	//makeBlankKey();
-	///return 0;
-	//beginTests();
-	//return 0;
+	Friendly ::beginTests();
+	return 0;
 	if (argc < 2)
 	{
 		cerr << NOT_ENOUGH_PARAMETERS << endl;
