@@ -6,4 +6,5 @@
 #define WRONG_USAGE "Wrong parameter: "
 #define ENCODED_SUCCESSFULLY "Files were encoded successfully"
 #define INVALID_FILE_FORMAT 1
+#define INVALID_PASSWORD 2
 #define INVALID_FILE_FORMAT_MSG "Invalid file format."

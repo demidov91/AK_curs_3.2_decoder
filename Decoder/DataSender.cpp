@@ -5,6 +5,7 @@
 
 DataSender::DataSender(void)
 {
+	bytesInBuffer = 0;
 }
 
 DataSender* DataSender::create(const char* keyFilename, HANDLE pipe, int blockSize)

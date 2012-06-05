@@ -9,3 +9,4 @@
 ///Format of data: |is it file or directory|length of file or number of files in directory - long int|BYTES_FOR_FSOBJECTNAME_LENGTH (length of next block)|name of file or directory|data...|
 ///                -------------------------BYTES_FOR_FSOBJECT---------------------------------------
 ///-------------------------------------------
+#define INFORMATION_PART_LENGTH MAX_THREAD_COUNT*2+BLOCK_COUNT

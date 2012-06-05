@@ -11,6 +11,7 @@ using namespace std;
 
 Decode::Decode(void)
 {
+	data_block = 0;
 }
 
 int Decode ::start(char* inputFile, char* key, char* password, int thread)
@@ -48,39 +49,76 @@ void Decode ::runDecoding(char* key, char* password, int thread, HANDLE pipe)
 {
 	InformationEncoder information;
 	information.create(&string(password));
-	BYTE pointer[2];
-	BYTE map[BLOCK_COUNT+1];
-	map[0] = -1;
-
+	
 	fseek(input, 0, SEEK_END);
-	unsigned long int totalLength = ftell(input);
+	totalLength = ftell(input);
 	fseek(input, 0, SEEK_SET);
-	BYTE data_block = 0;
 	fread(&data_block, sizeof(BYTE), 1, input);
 	char* dataBuffer = new char[data_block];
 
 	DataSender data;
 	data.create(key, pipe, data_block);
-	
+	char newMap = 1;		
 	while(ftell(input) < totalLength)
 	{
-		fseek(input, thread*2, SEEK_CUR);
-		fread(pointer, 1, 2, input);
-		information.encodePointer((char*)pointer);
-
-		fseek(input, (MAX_THREAD_COUNT-thread-1)*2 + pointer[0], SEEK_CUR);
-		fread(map+1, 1, pointer[1], input);
-		information.encodeMap((char*)map+1, pointer[1]);
-
-		fseek(input, BLOCK_COUNT-pointer[0] - pointer[1], SEEK_CUR);
-
-		for(int i = 0; i < pointer[1]; i++)
+		fread(&newMap, 1, 1, input);
+		if(newMap)
 		{
-			fseek(input, (map[i+1] - map[i])*data_block, SEEK_CUR);
+			checkEndFile(INFORMATION_PART_LENGTH + data_block*BLOCK_COUNT);
+			fseek(input, thread*2, SEEK_CUR);
+			fread(pointer, 1, 2, input);
+			information.encodePointer((char*)pointer);
+			checkPointer();
+			fseek(input, (MAX_THREAD_COUNT-thread-1)*2 + pointer[0], SEEK_CUR);
+			fread(map, 1, pointer[1], input);
+			information.encodeMap((char*)map, pointer[1]);
+			checkMap();
+			fseek(input, BLOCK_COUNT-pointer[0] - pointer[1], SEEK_CUR);
+		}
+		else
+		{
+			checkEndFile(data_block*BLOCK_COUNT);
+		}
+		for(int i = 0; i < pointer[1] - 1; i++)
+		{
 			fread(dataBuffer, 1, data_block, input);
 			data.send(dataBuffer);
+			fseek(input, (map[i+1] - map[i] - 1)*data_block, SEEK_CUR);
 		}
-		fseek(input, BLOCK_COUNT - map[pointer[1]] - 1, SEEK_CUR);
+		fread(dataBuffer, 1, data_block, input);
+		data.send(dataBuffer);
+		fseek(input, (BLOCK_COUNT - map[pointer[1] - 1] - 1)*data_block, SEEK_CUR);
+	}
+	delete[] dataBuffer;
+}
+
+void Decode ::checkPointer()
+{
+	if(pointer[0] + pointer[1] > BLOCK_COUNT)
+	{
+		throw INVALID_PASSWORD;
+	}	
+}
+
+
+void Decode ::checkMap()
+{
+	bool used[BLOCK_COUNT];
+	memset(used, 0, BLOCK_COUNT);
+	for(int i = 0; i < pointer[1]; i++)
+	{
+		if(used[map[i+1]])
+		{
+			throw INVALID_PASSWORD;
+		}
+		used[map[i+1]] = true;
 	}
 }
 
+void Decode ::checkEndFile(long int minLength)
+{
+	if (totalLength - ftell(input) < minLength)
+	{
+		throw INVALID_PASSWORD;
+	}
+}
