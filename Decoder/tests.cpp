@@ -3,6 +3,11 @@
 #include "logging.h"
 #include <conio.h>
 #include "Decode.h"
+#include "DecodedDataAccessor.h"
+#include "Constants.h"
+#include <boost\filesystem.hpp>
+#include "FSRestorer.h"
+using namespace boost ::filesystem;
 
 void Friendly ::test_InformationEncoder_encodeMap()
 {
@@ -103,10 +108,173 @@ void Friendly ::test_Decode_runDecoding()
 
 }
 
+void Friendly ::test_DecodedDataAccessor_get()
+{
+	HANDLE rPipe = 0;
+	HANDLE wPipe = 0;
+	CreatePipe(&rPipe, &wPipe, 0, 100);
+	DWORD processed = 0;
+	const char* bufferedFrase = "Frase 1";
+	WriteFile(wPipe, bufferedFrase, strlen(bufferedFrase)+1, &processed, 0);
+	char type = 5;
+	WriteFile(wPipe, &type, 1, &processed, 0);
+	unsigned long int size = 12345678;
+	WriteFile(wPipe, &size, sizeof(size), &processed, 0);
+	const char* bufferedName = "Some text";
+	BYTE lenOfName = strlen(bufferedName);
+	WriteFile(wPipe, &lenOfName, 1, &processed, 0);
+	WriteFile(wPipe, bufferedName, lenOfName, &processed, 0);
+
+	CloseHandle(wPipe);
+	DecodedDataAccessor reader;
+	reader.create(rPipe);
+	char pipedFrase[10];
+	reader.getBuffer(pipedFrase, strlen(bufferedFrase)+1);
+	if(strcmp(pipedFrase,bufferedFrase))
+	{
+		log_test("test_DecodedDataAccessor_get");
+		return;
+	}
+
+	char pipedType = reader.getType();
+	if(type != pipedType)
+	{
+		log_test("test_DecodedDataAccessor_get");
+		return;
+	}
+	DWORD pipedSize = reader.getSize();
+	if(size != pipedSize)
+	{
+		log_test("test_DecodedDataAccessor_get");
+		return;
+	}
+	string pipedName = reader.getName();
+	if(pipedName.compare(bufferedName))
+	{
+		log_test("test_DecodedDataAccessor_get");
+		return;
+	}
+	CloseHandle(rPipe);
+}
+
+void Friendly ::test_FSRestorer_restoreObject()
+{
+	const char* testDir = "TestRestoredDir";
+	const char* testFile = "TestRestoredFile.txt";
+	remove(testDir);
+	remove(testFile);
+	HANDLE rPipe = 0;
+	HANDLE wPipe = 0;
+	CreatePipe(&rPipe, &wPipe, 0, 100000);
+	//begin dir 1
+	char typeBuffer = DIRECTORY_BYTE;
+	DWORD written = 0;
+	WriteFile(wPipe, &typeBuffer, 1, &written, 0); 
+	DWORD sizeBuffer = 3;
+	WriteFile(wPipe, &sizeBuffer, sizeof(DWORD), &written, 0); 
+	BYTE nameLengthBuf = strlen(testDir);
+	WriteFile(wPipe, &nameLengthBuf, sizeof(BYTE), &written, 0);
+	WriteFile(wPipe, testDir, nameLengthBuf, &written, 0);
+
+	//begin file 1 in dir 1
+
+	typeBuffer = FILE_BYTE;
+	const char* f1namae = "test1.txt";
+	sizeBuffer = 10000;
+	nameLengthBuf = strlen(f1namae);
+	char fileBuffer[10000];
+	memset(fileBuffer, '1', sizeBuffer);
+
+	WriteFile(wPipe, &typeBuffer, 1, &written, 0); 
+	WriteFile(wPipe, &sizeBuffer, sizeof(DWORD), &written, 0); 
+	WriteFile(wPipe, &nameLengthBuf, sizeof(BYTE), &written, 0);
+	WriteFile(wPipe, f1namae, nameLengthBuf, &written, 0);
+	WriteFile(wPipe, fileBuffer, sizeBuffer, &written, 0);
+
+	//end file1 in dir 1
+	//begin dir in dir 1
+
+	typeBuffer = DIRECTORY_BYTE;
+	const char* dnamae = "test2";
+	sizeBuffer = 0;
+	nameLengthBuf = strlen(dnamae);
+	
+	WriteFile(wPipe, &typeBuffer, 1, &written, 0); 
+	WriteFile(wPipe, &sizeBuffer, sizeof(DWORD), &written, 0); 
+	WriteFile(wPipe, &nameLengthBuf, sizeof(BYTE), &written, 0);
+	WriteFile(wPipe, dnamae, nameLengthBuf, &written, 0);
+
+	//end dir in dir 1
+	//begin file 3 in dir 1
+
+	typeBuffer = FILE_BYTE;
+	const char* f3namae = "test3.txt";
+	sizeBuffer = 200;
+	nameLengthBuf = strlen(f3namae);
+	memset(fileBuffer, '3', sizeBuffer);
+
+	WriteFile(wPipe, &typeBuffer, 1, &written, 0); 
+	WriteFile(wPipe, &sizeBuffer, sizeof(DWORD), &written, 0); 
+	WriteFile(wPipe, &nameLengthBuf, sizeof(BYTE), &written, 0);
+	WriteFile(wPipe, f3namae, nameLengthBuf, &written, 0);
+	WriteFile(wPipe, fileBuffer, sizeBuffer, &written, 0);
+
+	//end file 3 in dir 1
+	//begin file
+
+	typeBuffer = FILE_BYTE;
+	sizeBuffer = 1;
+	nameLengthBuf = strlen(testFile);
+	memset(fileBuffer, '2', sizeBuffer);
+
+	WriteFile(wPipe, &typeBuffer, 1, &written, 0); 
+	WriteFile(wPipe, &sizeBuffer, sizeof(DWORD), &written, 0); 
+	WriteFile(wPipe, &nameLengthBuf, sizeof(BYTE), &written, 0);
+	WriteFile(wPipe, testFile, nameLengthBuf, &written, 0);
+	WriteFile(wPipe, fileBuffer, sizeBuffer, &written, 0);
+
+	//end file
+
+	CloseHandle(wPipe);
+	HANDLE decodingEndedEvent = CreateEvent(NULL, false, false, NULL);
+	FSRestorer tester;
+	tester.create(rPipe, decodingEndedEvent);
+	tester.start();
+	CloseHandle(rPipe);
+
+	if(!exists(testDir))
+	{
+		log_test("FSRestorer");
+		return;		
+	}
+
+
+	if(!exists(path(testDir) / path(f1namae)) || file_size(path(testDir) / path(f1namae)) != 10000)
+	{
+		log_test("FSRestorer");
+		return;		
+	}
+
+	if(!exists(path(testDir) / path(f3namae)) || file_size(path(testDir) / path(f3namae)) != 200)
+	{
+		log_test("FSRestorer");
+		return;		
+	}
+
+	if(!exists(path(testDir) / path(dnamae)))
+	{
+		log_test("FSRestorer");
+		return;		
+	}
+
+
+}
+
 void Friendly ::beginTests()
 {
 	test_InformationEncoder_encodeMap();
 	test_Decode_runDecoding();
+	test_DecodedDataAccessor_get();
+	test_FSRestorer_restoreObject();
 	getch();
-
 }

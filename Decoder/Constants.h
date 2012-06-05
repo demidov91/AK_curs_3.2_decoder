@@ -10,3 +10,9 @@
 ///                -------------------------BYTES_FOR_FSOBJECT---------------------------------------
 ///-------------------------------------------
 #define INFORMATION_PART_LENGTH MAX_THREAD_COUNT*2+BLOCK_COUNT
+#define DIRECTORY_BYTE 1
+#define FILE_BYTE 2
+
+#define INVALID_FILE_FORMAT 1
+#define INVALID_PASSWORD 2
+#define INVALID_KEY 3
