@@ -7,6 +7,7 @@
 #include "Constants.h"
 #include <boost\filesystem.hpp>
 #include "FSRestorer.h"
+#include "FileParser.h"
 using namespace boost ::filesystem;
 
 void Friendly ::test_InformationEncoder_encodeMap()
@@ -81,7 +82,7 @@ void makeSampleEncodedFileToCheckInfoBlock(const char* fileName, char* data)
 }
 
 
-void Friendly ::test_Decode_runDecoding()
+void Friendly ::test_FileParser_parse()
 {
 	const char* inputFilename = "test\\Decode\\sampleEncoded.txt";
 	char originalData[500];
@@ -90,12 +91,14 @@ void Friendly ::test_Decode_runDecoding()
 		originalData[i] = i;
 	}
 	makeSampleEncodedFileToCheckInfoBlock(inputFilename, originalData);
-	Decode tester;
-	tester.input = fopen(inputFilename, "rb");
+	FileParser tester;
+	FILE* input = fopen(inputFilename, "rb");
 	HANDLE rPipe = 0;
 	HANDLE wPipe = 0;
 	CreatePipe(&rPipe, &wPipe, 0, 800);
-	tester.runDecoding("test\\blank.key", "", 1, wPipe);
+	tester.input = input;
+	tester.pipe = wPipe;
+	tester.parse("test\\blank.key", "", 1);
 	fclose(tester.input);
 	char gotData[500];
 	DWORD read = 0;
@@ -273,7 +276,7 @@ void Friendly ::test_FSRestorer_restoreObject()
 void Friendly ::beginTests()
 {
 	test_InformationEncoder_encodeMap();
-	test_Decode_runDecoding();
+	test_FileParser_parse();
 	test_DecodedDataAccessor_get();
 	test_FSRestorer_restoreObject();
 	getch();

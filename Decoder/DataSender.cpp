@@ -53,5 +53,12 @@ void DataSender ::send(char* buffer)
 
 DataSender::~DataSender(void)
 {
+	DWORD bytesWritten = 0;
+	processor ->encodeBlock(buffer);
+	WriteFile(pipe, buffer, bytesInBuffer, &bytesWritten, 0);
+	if(bytesWritten < bytesInBuffer)
+	{
+		log_error("flush buffer. written less than 16");
+	}
 	delete processor;
 }
