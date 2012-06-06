@@ -35,7 +35,7 @@ int main(int argc, char** argv)
 			return 1;
 		}
 		int int_threadNumber = atoi(str_threadNumber+1);
-		if(!int_threadNumber && str_threadNumber[0] != '0')
+		if(!int_threadNumber && str_threadNumber[1] != '0')
 		{
 			cerr << WRONG_ARG_D << endl;
 			return 1;
@@ -51,6 +51,14 @@ int main(int argc, char** argv)
 			if(error == INVALID_FILE_FORMAT)
 			{
 				cerr << INVALID_FILE_FORMAT_MSG << endl;
+			}
+			else if (error == INVALID_KEY)
+			{
+				cerr << INVALID_KEY_MSG << endl;
+			}
+			else if (error == INVALID_PASSWORD)
+			{
+				cerr << INVALID_PASSWORD_MSG << endl;
 			}
 			return 1;
 		}

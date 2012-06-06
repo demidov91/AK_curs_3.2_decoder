@@ -47,9 +47,11 @@ DataEncoder ::DataEncoder(FILE* file)
 
 void DataEncoder ::encodeBlock(char* buffer)
 {
+	char asmBuffer[16];
+	memcpy(asmBuffer, buffer, 16);
 	__int16 step = this ->step;
 	__asm{
-			movups xmm7, buffer
+			movups xmm7, asmBuffer
 			mov CX, step
 isIt0:
 			cmp CX, 0
@@ -85,7 +87,7 @@ isIt6:
 			xorps xmm7, xmm6 
 			jmp writeOut
 writeOut:
-			movups buffer, xmm7
+			movups asmBuffer, xmm7
 
 			inc CX
 			cmp CX, 7
@@ -94,6 +96,7 @@ writeOut:
 saveStep:
 			mov step, CX
 		}
+	memcpy(buffer, asmBuffer,  16);
 	this ->step  = step;
 
 }

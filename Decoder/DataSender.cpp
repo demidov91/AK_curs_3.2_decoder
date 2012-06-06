@@ -13,6 +13,7 @@ DataSender* DataSender::create(const char* keyFilename, HANDLE pipe, int blockSi
 	FILE* key;
 	fopen_s(&key, keyFilename, "rb");
 	processor = new DataEncoder(key);
+
 	fclose(key);
 	this ->pipe = pipe;
 	this ->blockSize = blockSize;

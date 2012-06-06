@@ -53,6 +53,11 @@ void FileParser ::parse(const char* key, const char* password, int thread)
 		{
 			checkEndFile(data_block*BLOCK_COUNT);
 		}
+		if(mapLength == 0)
+		{
+			fseek(input, BLOCK_COUNT*data_block, SEEK_CUR);
+			continue;
+		}
 		fseek(input, map[0]*data_block, SEEK_CUR);
 		for(int i = 0; i < mapLength - 1; i++)
 		{
@@ -87,7 +92,16 @@ void FileParser ::checkPointer(BYTE* pointer)
 void FileParser ::checkMap(BYTE* map)
 {
 	bool used[BLOCK_COUNT];
+	char saveXMM0[16];
+	__asm
+	{
+		movupd saveXMM0, xmm0
+	}
 	memset(used, 0, BLOCK_COUNT);
+	__asm
+	{
+		movupd xmm0, saveXMM0
+	}
 	for(int i = 0; i < mapLength; i++)
 	{
 		if(used[map[i]])
